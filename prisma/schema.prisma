@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Setting {
+  id               String @id @default("main")
+  storeName        String @default("وزير السعادة")
+  slogan           String @default("حلاوته زيادة")
+  phone            String @default("+201025701015")
+  whatsapp         String @default("201025701015")
+  city             String @default("فاقوس")
+  governorate      String @default("الشرقية")
+  country          String @default("مصر")
+  deliveryMinutes  Int    @default(30)
+  logoUrl          String @default("/brand/logo-cart.png")
+  vodafoneCash     String @default("")
+  instapay         String @default("")
+  chatAutoReply    String @default("أهلا بيك! فتحنا تذكرة لدعمك وهنتابع معاك لحد ما المشكلة تتحل.")
+  storeLat         Float  @default(30.7301)
+  storeLng         Float  @default(31.7903)
+  deliveryBaseFee  Float  @default(15)
+  deliveryPerKm    Float  @default(2.5)
+  freeDeliveryAbove Float @default(0)
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("editor")
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  password  String   @default("")
+  walletBalance Float @default(0)
+  createdAt DateTime @default(now())
+  addresses Address[]
+  orders    Order[]
+  messages  ChatMessage[]
+  supportTickets SupportTicket[]
+  walletTransactions WalletTransaction[]
+}
+
+model Address {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label         String   @default("المنزل")
+  area          String
+  street        String
+  building      String   @default("")
+  buildingImage String?
+  lat           Float?
+  lng           Float?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Driver {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  orders    Order[]
+}
+
+model Category {
+  id        String     @id
+  name      String
+  slug      String     @unique
+  image     String
+  parentId  String?
+  parent    Category?  @relation("Tree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[] @relation("Tree")
+  sortOrder Int        @default(0)
+  products  Product[]
+}
+
+model Product {
+  id         String    @id
+  name       String
+  brand      String    @default("")
+  unit       String
+  image      String
+  price      Float
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id])
+  featured   Boolean   @default(false)
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  offers     Offer[]
+}
+
+model Offer {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  image       String?
+  priceBefore Float
+  priceAfter  Float
+  bundleQty   Int?
+  bundleBefore Float?
+  bundlePrice Float?
+  startsAt    DateTime
+  endsAt      DateTime
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id           String   @id
+  createdAt    DateTime @default(now())
+  customerId   String?
+  customer     Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  driverId     String?
+  driver       Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  customerName String
+  phone        String
+  address      String
+  lat          Float?
+  lng          Float?
+  payment      String
+  note         String   @default("")
+  status       String   @default("new")
+  total        Float
+  subtotal     Float   @default(0)
+  deliveryFee  Float   @default(0)
+  walletUsed   Float   @default(0)
+  items        String
+  deliveryCode String   @default("")
+  deliveredAt  DateTime?
+  orderRating  Int?
+  driverRating Int?
+  feedback     String?
+  fulfillment  String   @default("delivery")
+  paymentProof String?
+  rejectReason String?
+  refundAmount Float?
+  refundMethod String?
+  refundStatus String?
+  walletTransactions WalletTransaction[]
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  customerId     String
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  fromAdmin      Boolean  @default(false)
+  body           String
+  readByAdmin    Boolean  @default(false)
+  readByCustomer Boolean  @default(false)
+}
+
+model SupportTicket {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  closedAt      DateTime?
+  status        String   @default("open")
+  subject       String   @default("استفسار عام")
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  rating        Int?
+  ratingComment String?
+  messages      SupportMessage[]
+}
+
+model SupportMessage {
+  id             String        @id @default(cuid())
+  createdAt      DateTime      @default(now())
+  ticketId       String
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromAdmin      Boolean       @default(false)
+  isAuto         Boolean       @default(false)
+  body           String
+  imageUrl       String?
+  readByAdmin    Boolean       @default(false)
+  readByCustomer Boolean       @default(false)
+}
+
+model WalletTransaction {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  amount     Float
+  type       String
+  status     String   @default("completed")
+  note       String   @default("")
+  releaseAt  DateTime?
+}
+
+model DriverLocation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  driverId  String
+  orderId   String
+  lat       Float
+  lng       Float
+  heading   Float?
+  speed     Float?
+
+  @@unique([driverId, orderId])
+}
