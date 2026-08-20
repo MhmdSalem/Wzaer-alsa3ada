@@ -1,6 +1,9 @@
 import { getAdminUser, requireAdmin } from "@/lib/auth";
 import { AdminShell } from "../_components/AdminShell";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function CmsLayout({
   children,
 }: {
